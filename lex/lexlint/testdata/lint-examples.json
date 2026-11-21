@@ -96,5 +96,103 @@
       }
     },
     "issues": ["known-string-local-ref"]
+  },
+  {
+    "name": "space, no lint problems",
+    "schema": {
+      "lexicon": 1,
+      "id": "example.lexicon.group",
+      "defs": {
+        "main": {
+          "type": "space",
+          "description": "a group",
+          "key": "any",
+          "title": "Group",
+          "collections": ["example.lexicon.post", "com.example.calendar.event"]
+        }
+      }
+    },
+    "issues": []
+  },
+  {
+    "name": "space missing title, description, and collections",
+    "schema": {
+      "lexicon": 1,
+      "id": "example.lexicon.group",
+      "defs": {
+        "main": {
+          "type": "space",
+          "key": "literal:self",
+          "collections": []
+        }
+      }
+    },
+    "issues": ["missing-primary-description", "space-no-collections", "space-no-title"]
+  },
+  {
+    "name": "space as non-main definition",
+    "schema": {
+      "lexicon": 1,
+      "id": "example.lexicon.group",
+      "defs": {
+        "other": {
+          "type": "space",
+          "description": "a group",
+          "key": "any",
+          "title": "Group",
+          "collections": ["example.lexicon.post"]
+        }
+      }
+    },
+    "issues": ["non-main-primary"]
+  },
+  {
+    "name": "invalid space schema",
+    "schema": {
+      "lexicon": 1,
+      "id": "example.lexicon.group",
+      "defs": {
+        "main": {
+          "type": "space",
+          "description": "a group",
+          "key": "any",
+          "title": "Group"
+        }
+      }
+    },
+    "issues": ["lexicon-schema", "space-no-collections"]
+  },
+  {
+    "name": "permission set with space permissions inside and outside authority",
+    "schema": {
+      "lexicon": 1,
+      "id": "example.lexicon.perms",
+      "defs": {
+        "main": {
+          "type": "permission-set",
+          "title": "Groups",
+          "permissions": [
+            {
+              "type": "permission",
+              "resource": "space",
+              "spaceType": "example.lexicon.group",
+              "collection": ["com.example.calendar.event"],
+              "action": ["read", "create"]
+            },
+            {
+              "type": "permission",
+              "resource": "space",
+              "spaceType": "example.lexiconother.group"
+            },
+            {
+              "type": "permission",
+              "resource": "space",
+              "spaceType": "com.example.group"
+            }
+          ]
+        }
+      }
+    },
+    "issues": ["permission-space-authority", "permission-space-authority"]
   }
 ]

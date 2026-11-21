@@ -65,7 +65,7 @@ func lintSchemaDef(nsid syntax.NSID, defname string, def lexicon.SchemaDef) []Li
 			NSID:            nsid,
 			LintLevel:       "warn",
 			LintName:        "missing-primary-description",
-			LintDescription: "primary types (record, query, procedure, subscription, permission-set) should include a description",
+			LintDescription: "primary types (record, query, procedure, subscription, space) should include a description",
 			Message:         "primary type missing a description",
 		}
 	}
@@ -102,13 +102,13 @@ func lintSchemaDef(nsid syntax.NSID, defname string, def lexicon.SchemaDef) []Li
 
 	switch def.Inner.(type) {
 	// NOTE: not requiring description on permission-set
-	case lexicon.SchemaRecord, lexicon.SchemaQuery, lexicon.SchemaProcedure, lexicon.SchemaSubscription:
+	case lexicon.SchemaRecord, lexicon.SchemaQuery, lexicon.SchemaProcedure, lexicon.SchemaSubscription, lexicon.SchemaSpace:
 		if defname != "main" {
 			issues = append(issues, LintIssue{
 				NSID:            nsid,
 				LintLevel:       "error",
 				LintName:        "non-main-primary",
-				LintDescription: "primary types (record, query, procedure, subscription, permission-set) must be 'main' definition",
+				LintDescription: "primary types (record, query, procedure, subscription, permission-set, space) must be 'main' definition",
 				Message:         fmt.Sprintf("primary definition types must be 'main': %s", defname),
 			})
 		}
@@ -225,10 +225,40 @@ func lintSchemaDef(nsid syntax.NSID, defname string, def lexicon.SchemaDef) []Li
 			})
 		}
 		for _, perm := range v.Permissions {
-			// TODO: any lints on permissions?
-			_ = perm
+			// permission sets can only grant space types under their own NSID authority; others get dropped when the set is included
+			if perm.Resource == "space" && perm.SpaceType != "" && perm.SpaceType != "*" && !underNSIDAuthority(nsid, perm.SpaceType) {
+				issues = append(issues, LintIssue{
+					NSID:            nsid,
+					LintLevel:       "warn",
+					LintName:        "permission-space-authority",
+					LintDescription: "space permissions must name a space type under the permission set's NSID authority",
+					Message:         fmt.Sprintf("space type outside permission set authority (will be ignored): %s", perm.SpaceType),
+				})
+			}
 		}
-	case lexicon.SchemaPermission, lexicon.SchemaBoolean, lexicon.SchemaInteger, lexicon.SchemaString, lexicon.SchemaBytes, lexicon.SchemaCIDLink, lexicon.SchemaArray, lexicon.SchemaObject, lexicon.SchemaBlob, lexicon.SchemaToken, lexicon.SchemaRef, lexicon.SchemaUnion, lexicon.SchemaUnknown, lexicon.SchemaSpace:
+	case lexicon.SchemaSpace:
+		if v.Description == nil || *v.Description == "" {
+			issues = append(issues, missingDesc())
+		}
+		if v.Title == nil || *v.Title == "" {
+			issues = append(issues, LintIssue{
+				NSID:            nsid,
+				LintLevel:       "warn",
+				LintName:        "space-no-title",
+				LintDescription: "spaces should include a title (shown on OAuth consent screens)",
+				Message:         "missing title",
+			})
+		}
+		if len(v.Collections) == 0 {
+			issues = append(issues, LintIssue{
+				NSID:            nsid,
+				LintLevel:       "warn",
+				LintName:        "space-no-collections",
+				LintDescription: "spaces should list at least one collection (bare space permissions grant no write access otherwise)",
+				Message:         "empty collections",
+			})
+		}
+	case lexicon.SchemaPermission, lexicon.SchemaBoolean, lexicon.SchemaInteger, lexicon.SchemaString, lexicon.SchemaBytes, lexicon.SchemaCIDLink, lexicon.SchemaArray, lexicon.SchemaObject, lexicon.SchemaBlob, lexicon.SchemaToken, lexicon.SchemaRef, lexicon.SchemaUnion, lexicon.SchemaUnknown:
 		reciss := lintSchemaRecursive(nsid, def)
 		if len(reciss) > 0 {
 			issues = append(issues, reciss...)
@@ -393,4 +423,15 @@ func lintSchemaRecursive(nsid syntax.NSID, def lexicon.SchemaDef) []LintIssue {
 	}
 
 	return issues
+}
+
+// Whether 'other' is under the same NSID authority (everything up to the final name segment) as 'nsid'. Matches the check applied when expanding permission sets in OAuth scopes.
+func underNSIDAuthority(nsid syntax.NSID, other string) bool {
+	s := string(nsid)
+	idx := strings.LastIndexByte(s, '.')
+	if idx < 0 {
+		return false
+	}
+	prefix := s[:idx+1]
+	return len(other) > len(prefix) && strings.HasPrefix(other, prefix)
 }

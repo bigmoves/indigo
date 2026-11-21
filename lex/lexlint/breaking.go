@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"slices"
 	"sort"
 
 	"github.com/bluesky-social/indigo/atproto/lexicon"
@@ -331,7 +332,30 @@ func breakingDefs(nsid syntax.NSID, name string, local, remote lexicon.SchemaDef
 				})
 			}
 		}
-	case lexicon.SchemaUnknown, lexicon.SchemaPermissionSet, lexicon.SchemaSpace, lexicon.SchemaToken:
+	case lexicon.SchemaSpace:
+		r := remote.Inner.(lexicon.SchemaSpace)
+		if l.Key != r.Key {
+			issues = append(issues, LintIssue{
+				NSID:            nsid,
+				LintLevel:       "error",
+				LintName:        "space-key-type",
+				LintDescription: "space key type changed",
+				Message:         fmt.Sprintf("space key type changed (%s): %s != %s", name, l.Key, r.Key),
+			})
+		}
+		// adding collections is fine; removing one narrows what existing bare space permissions grant
+		for _, coll := range l.Collections {
+			if !slices.Contains(r.Collections, coll) {
+				issues = append(issues, LintIssue{
+					NSID:            nsid,
+					LintLevel:       "warn",
+					LintName:        "space-collection-removed",
+					LintDescription: "collection removed from space declaration",
+					Message:         fmt.Sprintf("space collection removed (%s): %s", name, coll),
+				})
+			}
+		}
+	case lexicon.SchemaUnknown, lexicon.SchemaPermissionSet, lexicon.SchemaToken:
 		// pass
 	default:
 		slog.Warn("unhandled schema def type in breaking check", "type", reflect.TypeOf(local.Inner))
