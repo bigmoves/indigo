@@ -505,6 +505,10 @@ type SchemaPermission struct {
 	LXM        []string `json:"lxm,omitempty"`
 	Audience   string   `json:"aud,omitempty"`
 	InheritAud bool     `json:"inheritAud,omitempty"`
+	SpaceType  string   `json:"spaceType,omitempty"`
+	Authority  string   `json:"authority,omitempty"`
+	SpaceKey   string   `json:"skey,omitempty"`
+	Manage     []string `json:"manage,omitempty"`
 }
 
 func (s *SchemaPermission) CheckSchema() error {
@@ -553,6 +557,48 @@ func (s *SchemaPermission) CheckSchema() error {
 		if s.Audience != "" && s.Audience != "*" {
 			return fmt.Errorf("rpc permission 'aud' can't have service DID in permission set")
 		}
+	case "space":
+		if len(s.LXM) > 0 || s.Audience != "" || s.InheritAud {
+			return fmt.Errorf("space permission does not support rpc parameters")
+		}
+		if s.SpaceType == "" {
+			return fmt.Errorf("space permission requires 'spaceType'")
+		}
+		if s.SpaceType == "*" {
+			return fmt.Errorf("space permission does not support wildcard 'spaceType' when in permission set")
+		}
+		if _, err := syntax.ParseNSID(s.SpaceType); err != nil {
+			return fmt.Errorf("space permission: %w", err)
+		}
+		if !(s.Authority == "" || s.Authority == "*" || s.Authority == "self") {
+			if _, err := syntax.ParseDID(s.Authority); err != nil {
+				return fmt.Errorf("space permission authority: %w", err)
+			}
+		}
+		if !(s.SpaceKey == "" || s.SpaceKey == "*") {
+			if _, err := syntax.ParseRecordKey(s.SpaceKey); err != nil {
+				return fmt.Errorf("space permission skey: %w", err)
+			}
+		}
+		// unlike repo permissions, space collections may be wildcard or under a different NSID authority
+		for _, coll := range s.Collection {
+			if coll == "*" {
+				continue
+			}
+			if _, err := syntax.ParseNSID(coll); err != nil {
+				return fmt.Errorf("space permission: %w", err)
+			}
+		}
+		for _, act := range s.Action {
+			if act != "read" && act != "read_self" && act != "create" && act != "update" && act != "delete" {
+				return fmt.Errorf("space permission unsupported action: %s", act)
+			}
+		}
+		for _, op := range s.Manage {
+			if op != "create" && op != "update" && op != "delete" {
+				return fmt.Errorf("space permission unsupported manage operation: %s", op)
+			}
+		}
 	case "blob", "account", "identity":
 		return fmt.Errorf("%s permission not allowed in permission sets", s.Resource)
 	default:
@@ -565,8 +611,8 @@ type SchemaSpace struct {
 	Type        string            `json:"type"` // "space"
 	Description *string           `json:"description,omitempty"`
 	Key         string            `json:"key"`
-	Name        string            `json:"name"`
-	NameLang    map[string]string `json:"name:lang,omitempty"`
+	Title       *string           `json:"title,omitempty"`
+	TitleLang   map[string]string `json:"title:lang,omitempty"`
 	Collections []string          `json:"collections"`
 }
 
@@ -577,23 +623,25 @@ func (s *SchemaSpace) CheckSchema() error {
 	if err := checkKeyType(s.Key); err != nil {
 		return err
 	}
-	if len(s.Name) < 1 || len(s.Name) > 64 {
-		// TODO: graphemes vs bytes?
-		return fmt.Errorf("space name must be between 1 and 64 characters long")
+	if literal, ok := strings.CutPrefix(s.Key, "literal:"); ok {
+		if _, err := syntax.ParseRecordKey(literal); err != nil {
+			return fmt.Errorf("invalid literal space key: %w", err)
+		}
 	}
-	for lang, name := range s.NameLang {
-		_, err := syntax.ParseLanguage(lang)
-		if err != nil {
+	// NOTE: length in UTF-8 bytes, matching the TypeScript implementation
+	if s.Title != nil && (len(*s.Title) < 1 || len(*s.Title) > 64) {
+		return fmt.Errorf("space title must be between 1 and 64 bytes long")
+	}
+	for lang := range s.TitleLang {
+		if _, err := syntax.ParseLanguage(lang); err != nil {
 			return err
 		}
-		if len(name) < 1 || len(name) > 64 {
-			// TODO: graphemes vs bytes?
-			return fmt.Errorf("space name must be between 1 and 64 characters long")
-		}
+	}
+	if s.Collections == nil {
+		return fmt.Errorf("space collections is required")
 	}
 	for _, c := range s.Collections {
-		_, err := syntax.ParseNSID(c)
-		if err != nil {
+		if _, err := syntax.ParseNSID(c); err != nil {
 			return err
 		}
 	}

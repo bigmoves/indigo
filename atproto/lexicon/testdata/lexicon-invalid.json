@@ -95,5 +95,153 @@
         }
       }
     }
+  },
+  {
+    "name": "space with empty title",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.space",
+      "defs": {
+        "main": { "type": "space", "key": "any", "title": "", "collections": [] }
+      }
+    }
+  },
+  {
+    "name": "space missing collections",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.space",
+      "defs": {
+        "main": { "type": "space", "key": "any", "title": "Example Space" }
+      }
+    }
+  },
+  {
+    "name": "space with non-NSID collection",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.space",
+      "defs": {
+        "main": { "type": "space", "key": "any", "title": "Example Space", "collections": ["not-a-valid-nsid"] }
+      }
+    }
+  },
+  {
+    "name": "space as non-main definition",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.space",
+      "defs": {
+        "demo": { "type": "space", "key": "any", "title": "Example Space", "collections": [] }
+      }
+    }
+  },
+  {
+    "name": "space missing key",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.space",
+      "defs": {
+        "main": { "type": "space", "title": "Example Space", "collections": [] }
+      }
+    }
+  },
+  {
+    "name": "space with invalid key type",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.space",
+      "defs": {
+        "main": { "type": "space", "key": "bogus", "title": "Example Space", "collections": [] }
+      }
+    }
+  },
+  {
+    "name": "space with invalid literal key",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.space",
+      "defs": {
+        "main": { "type": "space", "key": "literal:", "collections": [] }
+      }
+    }
+  },
+  {
+    "name": "space permission missing spaceType",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.perms",
+      "defs": {
+        "main": {
+          "type": "permission-set",
+          "permissions": [{ "type": "permission", "resource": "space", "action": ["read"] }]
+        }
+      }
+    }
+  },
+  {
+    "name": "space permission wildcard spaceType",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.perms",
+      "defs": {
+        "main": {
+          "type": "permission-set",
+          "permissions": [{ "type": "permission", "resource": "space", "spaceType": "*" }]
+        }
+      }
+    }
+  },
+  {
+    "name": "space permission unknown action",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.perms",
+      "defs": {
+        "main": {
+          "type": "permission-set",
+          "permissions": [{ "type": "permission", "resource": "space", "spaceType": "com.example.group", "action": ["manage"] }]
+        }
+      }
+    }
+  },
+  {
+    "name": "space permission unknown manage operation",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.perms",
+      "defs": {
+        "main": {
+          "type": "permission-set",
+          "permissions": [{ "type": "permission", "resource": "space", "spaceType": "com.example.group", "manage": ["read"] }]
+        }
+      }
+    }
+  },
+  {
+    "name": "space permission with rpc params",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.perms",
+      "defs": {
+        "main": {
+          "type": "permission-set",
+          "permissions": [{ "type": "permission", "resource": "space", "spaceType": "com.example.group", "aud": "*" }]
+        }
+      }
+    }
+  },
+  {
+    "name": "space permission invalid authority",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.perms",
+      "defs": {
+        "main": {
+          "type": "permission-set",
+          "permissions": [{ "type": "permission", "resource": "space", "spaceType": "com.example.group", "authority": "alice.example.com" }]
+        }
+      }
+    }
   }
 ]

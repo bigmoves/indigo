@@ -67,8 +67,74 @@
               "resource": "rpc",
               "lxm": ["example.lexicon.endpointTwo"],
               "inheritAud": true
+            },
+            {
+              "type": "permission",
+              "resource": "space",
+              "spaceType": "example.lexicon.group",
+              "collection": ["com.example.calendar.event"],
+              "action": ["read", "create"]
+            },
+            {
+              "type": "permission",
+              "resource": "space",
+              "spaceType": "example.lexicon.group",
+              "authority": "*",
+              "skey": "general",
+              "collection": ["*"],
+              "action": ["read_self"],
+              "manage": ["create", "update", "delete"]
             }
           ]
+        }
+      }
+    }
+  },
+  {
+    "name": "basic space",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.atmoboards.forum",
+      "defs": {
+        "main": {
+          "type": "space",
+          "key": "any",
+          "title": "AtmoBoards Forum",
+          "description": "A discussion forum",
+          "title:lang": {
+            "es": "Foro AtmoBoards",
+            "ja": "AtmoBoards 掲示板"
+          },
+          "collections": ["com.atmoboards.thread", "com.atmoboards.reply"]
+        }
+      }
+    }
+  },
+  {
+    "name": "space with empty collections",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.empty",
+      "defs": {
+        "main": {
+          "type": "space",
+          "key": "tid",
+          "title": "Empty Space",
+          "collections": []
+        }
+      }
+    }
+  },
+  {
+    "name": "space without title",
+    "lexicon": {
+      "lexicon": 1,
+      "id": "com.example.untitled",
+      "defs": {
+        "main": {
+          "type": "space",
+          "key": "any",
+          "collections": ["com.example.post"]
         }
       }
     }
